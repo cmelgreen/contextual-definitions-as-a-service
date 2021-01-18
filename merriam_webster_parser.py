@@ -3,46 +3,136 @@ import json
 import os
 import re
 
-def parse_resp(resp):
-    defs = dict()
-    for entry in resp:
-        defs.update({parse_date(entry): parse_defs(entry)})
+def get_sense_by_sn(sense_number, entry):
+    def loop_entry(entry):
+        x = entry
+        for sn in sense_number:
+            x = x[sn]
 
-    def_list = []
-    for _, value in defs.items():
-        #print(value)
-        def_list.append(structure_defs(value))
+        return x['def']
+
+    try: return loop_entry(entry)  
+    except: pass
+
+    # check for implicit references to transitive / intransitive verb if explicit path fails
+    try: return loop_entry(entry['t'])
+    except: pass
+
+    try: return loop_entry(entry['i'])
+    except: pass
+
+    return ''
+
+curr_num = ''
+curr_let = ''
+
+def reset():
+    global curr_let
+    global curr_num
+
+    curr_num = ''
+    curr_let = ''
+
+def parse_resp(resp, all_defs=False):
+    reset()
+    entries = [parse_entry(entry) for entry in resp]
     
-    return def_list
+    if all_defs == True:
+        return [non_empty for non_empty in entries if non_empty]
+    
+    for entry in entries:
+        entry['def'] = get_sense_by_sn(entry['sn'], entry['def'])
+    
+    entries = [e for e in entries if e['date'] and e['def']]
 
-def structure_defs(defs):
+    return entries
+
+
+
+def parse_entry(defs):
+    (date, sn) = parse_date(defs)
+    entry = unpack_defs(parse_defs(defs))
+
+    if entry is None:
+        return
+
+    return {
+        'date': date,
+        'sn': sn,
+        'def': entry
+    }
+
+
+def unpack_defs(defs):
+    global curr_num
+    global curr_let
+
     if isinstance(defs, dict):
         (key, value) = next(iter(defs.items()))
-        return {key: {'def': value}}
+        key = str(key)
+
+        if is_verb(key):
+            return {key: unpack_defs(value)}
+        else:
+            return fmt_def(key, value)
 
     if isinstance(defs, list):
         def_dict = dict()
-        curr_num = ''
 
-        def fmt_def(key, value):
-            return {key: {'def': value}}
+        # def reset_curr():
+        #     nonlocal curr_num
+        #     nonlocal curr_let
+
+        #     curr_num = ''
+        #     curr_let = ''
+
 
         for d in defs:
-            curr_let = ''
             if isinstance(d, list):
-                def_dict.update(structure_defs(d))
+                def_dict.update(unpack_defs(d))
             if isinstance(d, dict):
                 (key, value) = next(iter(d.items()))
-                if is_paren(key):
-                    def_dict[curr_num][curr_let].update(fmt_def(key, value))
-                elif is_number(key):
+                
+                if is_number(key):
                     curr_num = key
                     def_dict.update(fmt_def(key, value))
+                elif is_paren(key):
+                    
+                    def_dict[curr_num][curr_let].update(fmt_def(key, value))
                 else:
-                    def_dict[curr_num].update(fmt_def(key, value))
+                    keys = key.split()
+                    
+                    def nest_keys(keys):
+                        global curr_num
+                        global curr_let
+
+                        key = keys[0]
+
+                        if len(keys) > 1:
+
+                            if is_number(key):
+                                curr_num = key
+
+                            if is_letter(key):
+                                curr_let = key
+
+                            return {key: nest_keys(keys[1:])}
+                        else:
+                            return (fmt_def(key, value))
+
+                    if not curr_num or (is_number(keys[0]) and curr_num != keys[0]):
+                        def_dict.update(nest_keys(keys))
+
+                    elif curr_num:
+                        def_dict[curr_num].update(fmt_def(key, value))
 
         return def_dict
-            
+
+def fmt_def(key, value):
+    key = str(key)
+
+    return {key: {'def': value}}
+
 def is_number(string):
     try:
         int(string)
@@ -53,6 +143,12 @@ def is_number(string):
 def is_paren(string):
     return '(' in string[0]
 
+def is_letter(string):
+    return string.isalpha()
+
+def is_verb(string):
+    return string == 't' or string == 'i'
+        
 
 # First Known Use: date
 # Hierarchical Context
@@ -62,9 +158,22 @@ def is_paren(string):
 def parse_date(entry):
     if isinstance(entry, dict):
         if 'date' in entry.keys():
-            return entry['date']
+            return clean_date(entry['date'])
 
-    return
+
+    return ('', '')
+
+def clean_date(date_string):
+    date = int(re.search(r'[0-9]+', date_string).group())
+    sn = re.findall(r'(?<=\|)[\w()]*', date_string) or ['1']
+    sn = [non_empty for non_empty in sn if non_empty]
+
+    # quick and dirty conversion of centuries 
+    if date < 100:
+        date = (date-1) * 100
+
+    return (date, sn)
+
 
 
 # Definition: def
@@ -95,8 +204,13 @@ def is_vd(vd):
     
     return False
 
+# Verbs can be transititive or intransitive and referenced as 'i' or 'v' in date
 def parse_vd(vd):
-    return parse_sseq(vd['sseq'])
+    verb_type = 't'
+    if 'intransitive' in vd['vd']:
+        verb_type = 'i'
+
+    return {verb_type: parse_sseq(vd['sseq'])}
 
 
 #
@@ -129,7 +243,7 @@ def parse_array(array):
 def is_sseq(sseq):
     if isinstance(sseq, dict):
         return 'sseq' in sseq.keys()
-    
+
     return False
 
 def parse_sseq(sseq):
@@ -209,6 +323,9 @@ def parse_sense(sense):
     if 'sn' in sense.keys():
         sn = sense['sn']
 
+
+    sn = str(sn)
+
     dt = parse_dt(sense['dt'])
     if 'sdsense' in sense.keys():
         dt += parse_sdsense(sense['sdsense'])
@@ -239,4 +356,4 @@ def parse_dt(dt):
     for elem in dt:
         if elem[0] == 'text':
             ### Implement text cleaning
-            return re.sub(r'\{[\w]*\}', '', elem[1])
+            return re.sub(r'\{[\w]*\}', '', elem[1]).strip()
