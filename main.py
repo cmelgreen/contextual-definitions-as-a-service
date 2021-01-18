@@ -79,12 +79,14 @@ def parallelize(f, args):
         return results
 
 def encode_list():
-    with BertClient(port=5555, port_out=5556) as bc:
+    with BertClient(ip='52.12.84.43') as bc:
         print(bc.encode(['First do it', 'then do it right', 'then do it better']))
 
 
 def fetch_and_parse(word):
     return parse_resp(fetch_word(word))
+
+encode_list()
 
 # words = ['template', 'balloon', 'overlay', 'boogey']
 
