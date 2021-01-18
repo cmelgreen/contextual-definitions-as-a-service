@@ -83,35 +83,34 @@ def encode_list():
         print(bc.encode(['First do it', 'then do it right', 'then do it better']))
 
 
-
 def fetch_and_parse(word):
     return parse_resp(fetch_word(word))
 
-words = ['template', 'balloon', 'overlay', 'boogey']
+# words = ['template', 'balloon', 'overlay', 'boogey']
 
-start = time.time()
-words = [fetch_word(word) for word in words]
-end = time.time()
-print('Raw F: ', end-start)
+# start = time.time()
+# words = [fetch_word(word) for word in words]
+# end = time.time()
+# print('Raw F: ', end-start)
 
-words = ['template', 'balloon', 'overlay', 'boogey']
+# words = ['template', 'balloon', 'overlay', 'boogey']
 
-start = time.time()
-words = parallelize(fetch_word, words)
-end = time.time()
-print('Fetch: ', end-start)
+# start = time.time()
+# words = parallelize(fetch_word, words)
+# end = time.time()
+# print('Fetch: ', end-start)
 
-start = time.time()
-words = [parse_resp(word) for word in words]
-end = time.time()
-print('Parse: ', end-start)
+# start = time.time()
+# words = [parse_resp(word) for word in words]
+# end = time.time()
+# print('Parse: ', end-start)
 
-words = ['template', 'balloon', 'overlay', 'boogey']
+# words = ['template', 'balloon', 'overlay', 'boogey']
 
-start = time.time()
-words = parallelize(fetch_and_parse, words)
-end = time.time()
-print('FandP: ', end-start)
+# start = time.time()
+# words = parallelize(fetch_and_parse, words)
+# end = time.time()
+# print('FandP: ', end-start)
 
 
 # for word in words:
