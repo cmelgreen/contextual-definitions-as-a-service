@@ -1,5 +1,6 @@
 from bert_serving.client import BertClient
 import urllib.request
+import requests
 import json
 import re
 import os
@@ -79,8 +80,23 @@ def parallelize(f, args):
         return results
 
 def encode_list():
-    with BertClient(ip='localhost:8080') as bc:
-        print(bc.encode(['First do it', 'then do it right', 'then do it better']))
+    url = 'http://ctx-dfs-lb-1524928552.us-west-2.elb.amazonaws.com/encode'
+    ip = '54.202.138.177:80'
+
+    words = ['First do it', 'then do it right', 'then do it better']
+
+    data = {
+        "id": 123,
+        "texts": words
+    }
+    start = time.time()
+    resp = requests.post(url, json=data)
+    end = time.time()
+
+    print(end-start)
+
+    # with BertClient(ip=ip) as bc:
+    #     print(bc.encode(words))
 
 
 def fetch_and_parse(word):
