@@ -3,6 +3,7 @@ import json
 import os
 import re
 
+
 def get_sense_by_sn(sense_number, entry):
     def loop_entry(entry):
         x = entry

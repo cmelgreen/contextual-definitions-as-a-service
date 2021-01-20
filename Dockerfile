@@ -8,5 +8,5 @@ RUN curl https://storage.googleapis.com/bert_models/2020_02_20/uncased_L-12_H-76
 ### install bert-as-service server
 RUN pip install update && pip install bert-serving-server[http]
 
-### Start server, "-pooling_strategy=NONE" for 
-CMD [ "bert-serving-start", "-model_dir=tmp/model/", "-http_port=80"]
+### Start server, "-pooling_strategy=NONE" for "-http_port=80"
+CMD [ "bert-serving-start", "-model_dir=tmp/model/" ]

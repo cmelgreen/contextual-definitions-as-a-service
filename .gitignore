@@ -7,4 +7,6 @@ __pycache__
 **/.terraform*
 **/terraform.tfstate*
 
+tmp*
+
 

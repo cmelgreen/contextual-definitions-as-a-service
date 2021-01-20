@@ -89,6 +89,7 @@ def encode_list():
         "id": 123,
         "texts": words
     }
+
     start = time.time()
     resp = requests.post(url, json=data)
     end = time.time()
