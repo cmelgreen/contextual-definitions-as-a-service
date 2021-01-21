@@ -123,9 +123,12 @@ def unpack_defs(defs):
 
                     if not curr_num or (is_number(keys[0]) and curr_num != keys[0]):
                         def_dict.update(nest_keys(keys))
-
+                        
                     elif curr_num:
-                        def_dict[curr_num].update(fmt_def(key, value))
+                        if curr_num in def_dict.keys():
+                            def_dict[curr_num].update(fmt_def(key, value))
+                        else:
+                            return {str(key): unpack_defs(value)}
 
         return def_dict
 
